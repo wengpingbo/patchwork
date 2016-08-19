@@ -62,6 +62,37 @@ def find_patch_series(patch):
     # url will automaticly switch to cover if a patch is not found
     return [{'id':parent.id, 'name':parent.name}] + patches
 
+def find_patch_version(patch):
+    series = []
+
+    # find new version
+    p = patch
+    while p:
+        tmp = {}
+        tmp['id'] = p.id
+        tmp['name'] = p.name
+        series.append(tmp)
+
+        try:
+            p = p.new_version
+        except Submission.DoesNotExist:
+            p = None
+
+    # find old version
+    p = patch.old_version
+    while p:
+        tmp = {}
+        tmp['id'] = p.id
+        tmp['name'] = p.name
+        series.append(tmp)
+
+        p = p.old_version
+
+    if len(series) > 1:
+        return series
+    else:
+        return None
+
 def patch(request, patch_id):
     # redirect to cover letters where necessary
     try:
@@ -134,6 +165,7 @@ def patch(request, patch_id):
     context['createbundleform'] = createbundleform
     context['project'] = patch.project
     context['patchseries'] = find_patch_series(patch)
+    context['patchversion'] = find_patch_version(patch)
 
     return render(request, 'patchwork/submission.html', context)
 

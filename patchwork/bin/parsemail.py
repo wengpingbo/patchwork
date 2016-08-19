@@ -41,6 +41,7 @@ from django.contrib.auth.models import User
 from django.utils.log import AdminEmailHandler
 from django.utils import six
 from django.utils.six.moves import map
+from django.db import IntegrityError
 
 from patchwork.models import (Patch, Project, Person, Comment, State,
                               DelegationRule, Submission, CoverLetter,
@@ -402,10 +403,12 @@ def clean_subject(subject, drop_prefixes=None):
     subject = normalise_space(subject)
 
     subject = subject.strip()
+    raw_subject = subject
+
     if prefixes:
         subject = '[%s] %s' % (','.join(prefixes), subject)
 
-    return (is_comment, subject, prefixes)
+    return (is_comment, raw_subject, subject, prefixes)
 
 
 def clean_content(content):
@@ -466,6 +469,22 @@ def find_delegate(mail):
             pass
     return None
 
+def update_patch_version(project, raw_name):
+    raw_name = re.escape(raw_name)
+    raw_name = raw_name + r'$'
+    patches = Patch.objects.filter(project=project, name__regex=raw_name)
+
+    cnt = len(patches)
+    if cnt < 2:
+        return
+
+    for i in reversed(range(1, cnt)):
+        patches[i].old_version = patches[i - 1]
+        try:
+            patches[i].save()
+        except IntegrityError:
+            LOGGER.error('Failed to update patch old_version %s', patches[i].name)
+            pass
 
 def parse_mail(mail, list_id=None):
     """Parse a mail and add to the database.
@@ -510,7 +529,7 @@ def parse_mail(mail, list_id=None):
 
     msgid = mail.get('Message-Id').strip()
     author = find_author(mail)
-    is_comment, name, prefixes = clean_subject(mail.get('Subject'), [project.linkname])
+    is_comment, raw_name, name, prefixes = clean_subject(mail.get('Subject'), [project.linkname])
     x, n = parse_series_marker(prefixes)
     refs = find_references(mail)
     date = find_date(mail)
@@ -544,6 +563,8 @@ def parse_mail(mail, list_id=None):
             state=find_state(mail))
         patch.save()
         LOGGER.debug('Patch saved')
+
+        update_patch_version(project, raw_name)
 
         return patch
     elif x == 0:  # (potential) cover letters

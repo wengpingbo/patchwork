@@ -108,15 +108,26 @@ function toggle_headers(link_id, headers_id)
  </div>
 {% endif %}
 
-{% if patchseries %}
+{% if patchversion or patchseries %}
 <div class="patchform patchform-series">
 <h3>Patch Series</h3>
 
+{% if patchversion %}
+<strong>Versions: </strong>
+<select id=patch_version name="version" onChange="window.location.replace(this.options[this.selectedIndex].value)">
+{% for patch in patchversion %}
+    <option value="{% url 'patch-detail' patch_id=patch.id %}" {% if submission.id = patch.id %}selected{% endif %}>{{ patch.name }}</option>
+{% endfor %}
+</select>
+{% endif %}
+
+{% if patchseries %}
 <ul>
 {% for patch in patchseries %}
     <li><a href="{% url 'patch-detail' patch_id=patch.id %}">{{ patch.name }}</a></li>
 {% endfor %}
 </ul>
+{% endif %}
 
 </div>
 {% endif %}

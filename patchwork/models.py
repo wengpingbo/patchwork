@@ -299,6 +299,7 @@ class Submission(EmailMixin, models.Model):
 
     name = models.CharField(max_length=255)
     parent = models.ForeignKey('self', null=True, blank=True, related_name="children")
+    old_version = models.OneToOneField('self', null=True, blank=True, related_name="new_version")
 
     # patchwork metadata
 
