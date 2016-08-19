@@ -226,13 +226,13 @@ class StateFilter(Filter):
         return qs + '%s=%s' % (self.param, self.any_key)
 
 
-class SearchFilter(Filter):
-    param = 'q'
+class SubjectFilter(Filter):
+    param = 'subject'
 
     def __init__(self, filters):
-        super(SearchFilter, self).__init__(filters)
-        self.name = 'Search'
-        self.param = 'q'
+        super(SubjectFilter, self).__init__(filters)
+        self.name = 'Subject'
+        self.param = 'subject'
         self.search = None
 
     def _set_key(self, str):
@@ -401,7 +401,7 @@ class DelegateFilter(Filter):
 
 filterclasses = [SubmitterFilter,
                  StateFilter,
-                 SearchFilter,
+                 SubjectFilter,
                  ArchiveFilter,
                  DelegateFilter]
 
