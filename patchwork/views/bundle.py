@@ -101,9 +101,7 @@ def setbundle(request):
 
 
 @login_required
-def bundles(request, project_id=None):
-    project = None
-
+def internal_bundles(request, project=None):
     if request.method == 'POST':
         form_name = request.POST.get('form_name', '')
 
@@ -114,23 +112,43 @@ def bundles(request, project_id=None):
                                            id=form.cleaned_data['bundle_id'])
                 bundle.delete()
 
-    if project_id is None:
+    if project is None:
         bundles = Bundle.objects.filter(owner=request.user)
     else:
-        project = get_object_or_404(Project, linkname=project_id)
         bundles = Bundle.objects.filter(owner=request.user, project=project)
 
     for bundle in bundles:
         bundle.delete_form = DeleteBundleForm(auto_id=False,
                                               initial={'bundle_id': bundle.id})
 
+    return bundles
+
+def bundles(request, project_id=None):
+    project = None
+    bundles = None
+
+    if project_id:
+        project = get_object_or_404(Project, linkname=project_id)
+
+    if request.user.is_authenticated():
+        bundles = internal_bundles(request, project)
+
+    # show public bundles
+    if project is None:
+        bundles_pub = Bundle.objects.filter(public=True)
+    else:
+        bundles_pub = Bundle.objects.filter(public=True, project=project)
+
+    if request.user.is_authenticated():
+        bundles_pub = bundles_pub.exclude(owner=request.user)
+
     context = {
-        'bundles': bundles,
+        'owned_bundles': bundles,
+        'pub_bundles': bundles_pub,
         'project': project,
     }
 
     return render(request, 'patchwork/bundles.html', context)
-
 
 def bundle(request, username, bundlename):
     bundle = get_object_or_404(Bundle, owner__username=username,

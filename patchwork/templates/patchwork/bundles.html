@@ -6,9 +6,9 @@
 {% block bundle_active %}active{% endblock %}
 
 {% block body %}
-<h1>Bundles</h1>
+<h1>Your Bundles</h1>
 
-{% if bundles %}
+{% if owned_bundles %}
 <table class="bundlelist">
  <tr>
   <th>Name</th>
@@ -18,7 +18,7 @@
   <th>Download</th>
   <th>Delete</th>
  </tr>
-{% for bundle in bundles %}
+{% for bundle in owned_bundles %}
  <tr>
   <td><a href="{{ bundle.get_absolute_url }}">{{ bundle.name }}</a></td>
   <td>{{ bundle.project.linkname }}</td>
@@ -42,10 +42,47 @@
      title="delete" border="0" style="border: none;"/>
    </form>
   </td>
-
  </tr>
 {% endfor %}
 </table>
+{% endif %}
+
+{% if not owned_bundles %}
+<p>You have no bundles.</p>
+{% endif %}
+
+<h1>Public Bundles</h1>
+
+{% if pub_bundles %}
+<table class="bundlelist">
+ <tr>
+  <th>Name</th>
+  <th>Project</th>
+  <th>Public Link</th>
+  <th>Patches</td>
+  <th>Download</th>
+ </tr>
+{% for bundle in pub_bundles %}
+ <tr>
+  <td><a href="{{ bundle.get_absolute_url }}">{{ bundle.name }}</a></td>
+  <td>{{ bundle.project.linkname }}</td>
+  <td>
+   {% if bundle.public %}
+    <a href="{{ bundle.public_url }}">{{ bundle.public_url }}</a>
+   {% endif %}
+  </td>
+  <td style="text-align: right">{{ bundle.n_patches }}</td>
+  <td style="text-align: center;"><a
+   href="{% url 'bundle-mbox' username=bundle.owner.username bundlename=bundle.name %}"
+   ><img src="{% static "images/16-em-down.png" %}" width="16" height="16" alt="download"
+   title="download"/></a></td>
+ </tr>
+{% endfor %}
+</table>
+{% endif %}
+
+{% if not pub_bundles %}
+<p>No public bundles in this project.</p>
 {% endif %}
 
 <p>Bundles are groups of related patches. You can create bundles by
@@ -54,7 +91,4 @@ to give your bundle a name. Each bundle can be public or private; public
 bundles are given a persistent URL, based you your username and the name
 of the bundle. Private bundles are only visible to you.</p>
 
-{% if not bundles %}
-<p>You have no bundles.</p>
-{% endif %}
 {% endblock %}
