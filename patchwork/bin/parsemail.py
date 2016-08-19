@@ -341,6 +341,7 @@ def clean_subject(subject, drop_prefixes=None):
           from the subject
     """
     re_re = re.compile(r'^(re|fwd?)[:\s]\s*', re.I)
+    comment_re = re.compile(r'^(re)[:\s]\s*', re.I)
     prefix_re = re.compile(r'^\[([^\]]*)\]\s*(.*)$')
     subject = clean_header(subject)
 
@@ -351,6 +352,7 @@ def clean_subject(subject, drop_prefixes=None):
 
     drop_prefixes.append('patch')
 
+    is_comment = comment_re.match(subject)
     # remove Re:, Fwd:, etc
     subject = re_re.sub(' ', subject)
 
@@ -374,7 +376,7 @@ def clean_subject(subject, drop_prefixes=None):
     if prefixes:
         subject = '[%s] %s' % (','.join(prefixes), subject)
 
-    return (subject, prefixes)
+    return (is_comment, subject, prefixes)
 
 
 def clean_content(content):
@@ -479,7 +481,7 @@ def parse_mail(mail, list_id=None):
 
     msgid = mail.get('Message-Id').strip()
     author = find_author(mail)
-    name, prefixes = clean_subject(mail.get('Subject'), [project.linkname])
+    is_comment, name, prefixes = clean_subject(mail.get('Subject'), [project.linkname])
     x, n = parse_series_marker(prefixes)
     refs = find_references(mail)
     date = find_date(mail)
@@ -488,7 +490,7 @@ def parse_mail(mail, list_id=None):
 
     # build objects
 
-    if diff or pull_url:  # patches or pull requests
+    if not is_comment and (diff or pull_url):  # patches or pull requests
         # we delay the saving until we know we have a patch.
         author.save()
 
@@ -518,16 +520,18 @@ def parse_mail(mail, list_id=None):
         # however, we need to see if a match already exists and, if
         # not, assume that it is indeed a new cover letter
         is_cover_letter = False
-        if not refs == []:
-            try:
-                CoverLetter.objects.all().get(name=name)
-            except CoverLetter.DoesNotExist:  # no match => new cover
+
+        if not is_comment:
+            if not refs == []:
+                try:
+                    CoverLetter.objects.all().get(name=name)
+                except CoverLetter.DoesNotExist:  # no match => new cover
+                    is_cover_letter = True
+                except CoverLetter.MultipleObjectsReturned:
+                    # if multiple cover letters are found, just ignore
+                    pass
+            else:
                 is_cover_letter = True
-            except CoverLetter.MultipleObjectsReturned:
-                # if multiple cover letters are found, just ignore
-                pass
-        else:
-            is_cover_letter = True
 
         if is_cover_letter:
             author.save()
@@ -551,6 +555,9 @@ def parse_mail(mail, list_id=None):
     submission = find_submission_for_comment(project, refs)
     if not submission:
         return
+
+    if is_comment and diff:
+        message += diff
 
     author.save()
 
