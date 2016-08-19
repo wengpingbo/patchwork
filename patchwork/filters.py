@@ -261,6 +261,48 @@ class SubjectFilter(Filter):
     def form_function(self):
         return mark_safe('function(form) { return form.x.value }')
 
+class ContentFilter(Filter):
+    param = 'content'
+
+    def __init__(self, filters):
+        super(ContentFilter, self).__init__(filters)
+        self.name = 'Patch Path'
+        self.param = 'content'
+        self.search = None
+
+    def _set_key(self, str):
+        str = str.strip()
+        if str == '':
+            return
+        self.search = str
+        self.applied = True
+
+    def kwargs(self):
+        words = self.search.decode("utf-8").split()
+
+        value = r'\n\s(' + words[0] + r')'
+        words.remove(words[0])
+        for s in words:
+            value += r'|(' + s + r')'
+        value += r'.+\.[ch]'
+
+        return {'content__regex': value}
+
+    def condition(self):
+        return self.search
+
+    def key(self):
+        return self.search
+
+    def _form(self):
+        value = ''
+        if self.search:
+            value = escape(self.search)
+        return mark_safe('<input name="%s" class="form-control" value="%s">' %
+                         (self.param, value))
+
+    def form_function(self):
+        return mark_safe('function(form) { return form.x.value }')
 
 class ArchiveFilter(Filter):
     param = 'archive'
@@ -402,6 +444,7 @@ class DelegateFilter(Filter):
 filterclasses = [SubmitterFilter,
                  StateFilter,
                  SubjectFilter,
+                 ContentFilter,
                  ArchiveFilter,
                  DelegateFilter]
 
