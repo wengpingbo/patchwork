@@ -32,6 +32,35 @@ from patchwork.forms import PatchForm, CreateBundleForm
 from patchwork.models import Patch, Project, Bundle, Submission
 from patchwork.views import generic_list, patch_to_mbox
 
+def find_patch_series(patch):
+    def find_child(parent):
+        series = []
+
+        subms = parent.children.all().only('id', 'name')
+        for subm in subms:
+            tmp = {}
+
+            tmp['id'] = subm.id
+            tmp['name'] = subm.name
+            series.append(tmp)
+
+            if subm.children.all():
+                series += find_child(subm)
+
+        return series
+
+    # find the top parent
+    parent = patch
+    while parent.parent:
+        parent = parent.parent
+
+    patches = find_child(parent)
+    if len(patches) == 0:
+        return None
+
+    # We assume the fisrt submission in a series is a patch, and
+    # url will automaticly switch to cover if a patch is not found
+    return [{'id':parent.id, 'name':parent.name}] + patches
 
 def patch(request, patch_id):
     # redirect to cover letters where necessary
@@ -104,6 +133,7 @@ def patch(request, patch_id):
     context['patchform'] = form
     context['createbundleform'] = createbundleform
     context['project'] = patch.project
+    context['patchseries'] = find_patch_series(patch)
 
     return render(request, 'patchwork/submission.html', context)
 

@@ -298,6 +298,7 @@ class Submission(EmailMixin, models.Model):
     # submission metadata
 
     name = models.CharField(max_length=255)
+    parent = models.ForeignKey('self', null=True, blank=True, related_name="children")
 
     # patchwork metadata
 

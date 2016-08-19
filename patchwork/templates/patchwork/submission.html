@@ -108,6 +108,20 @@ function toggle_headers(link_id, headers_id)
  </div>
 {% endif %}
 
+{% if patchseries %}
+<div class="patchform patchform-series">
+<h3>Patch Series</h3>
+
+<ul>
+{% for patch in patchseries %}
+    <li><a href="{% url 'patch-detail' patch_id=patch.id %}">{{ patch.name }}</a></li>
+{% endfor %}
+</ul>
+
+</div>
+{% endif %}
+
+
 {% if createbundleform %}
  <div class="patchform patchform-bundle">
   <h3>Bundling</h3>
