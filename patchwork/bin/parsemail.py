@@ -25,7 +25,6 @@ import argparse
 import codecs
 import datetime
 from email import message_from_file
-from email import message_from_string
 from email.header import Header, decode_header
 from email.utils import parsedate_tz, mktime_tz
 from fnmatch import fnmatch
@@ -320,21 +319,6 @@ def find_submission_for_comment(project, refs):
 
     return None
 
-def clean_orphan_patch(project, parent):
-    """We get a parent submission, and need walk through
-    all patches without a parent, since we can not make
-    sure that the parent email is parsed first than others.
-
-    We only walk through the patches in a near time against parent"""
-    if not parent == None:
-        patches = Patch.objects.filter(project=project, parent=None,
-                date__range=[parent.date - datetime.timedelta(days=1), parent.date])
-        for patch in patches:
-            refs = find_references(message_from_string(patch.headers))
-            if refs and parent.msgid == refs[0]:
-                patch.parent = parent
-                patch.save()
-
 def find_submission_for_ppatch(project, ref):
     submission = None
 
@@ -343,9 +327,6 @@ def find_submission_for_ppatch(project, ref):
             submission = Submission.objects.get(project=project, msgid=ref)
         except Submission.DoesNotExist:
             pass
-
-    if not submission == None:
-        clean_orphan_patch(project, submission)
 
     return submission
 
@@ -598,9 +579,6 @@ def parse_mail(mail, list_id=None):
                 content=message)
             cover_letter.save()
             LOGGER.debug('Cover letter saved')
-
-            if not cover_letter == None:
-                clean_orphan_patch(project, cover_letter)
 
             return cover_letter
 
