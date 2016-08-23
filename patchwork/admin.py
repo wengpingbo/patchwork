@@ -23,7 +23,7 @@ from django.contrib import admin
 
 from patchwork.models import (Project, Person, UserProfile, State, Submission,
                               Patch, CoverLetter, Comment, Bundle, Tag, Check,
-                              DelegationRule)
+                              DiscussThread, DelegationRule)
 
 
 class DelegationRuleInline(admin.TabularInline):
@@ -73,6 +73,8 @@ admin.site.register(Submission, SubmissionAdmin)
 CoverLetterAdmin = SubmissionAdmin
 admin.site.register(CoverLetter, CoverLetterAdmin)
 
+DiscussThreadAdmin = SubmissionAdmin
+admin.site.register(DiscussThread, DiscussThreadAdmin)
 
 class PatchAdmin(admin.ModelAdmin):
     list_display = ('name', 'submitter', 'project', 'state', 'date',

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% load person %}
+{% load static %}
+
+{% block title %}{{project.name}}{% endblock %}
+{% block discuss_active %}active{% endblock %}
+
+{% block body %}
+
+<h1>Discuss</h1>
+
+{% load person %}
+{% load project %}
+{% load static %}
+
+{% load cycle from future %}
+
+{% include "patchwork/pagination.html" %}
+
+<table class="table table-hover table-extra-condensed table-striped">
+ <thead>
+  <tr>
+   <th>
+    <span class="colinactive">Submission</span>
+   </th>
+
+   <th>
+    <span class="colinactive">Last Update</span>
+   </th>
+
+   <th>
+    <span class="colinactive">Submitter</span>
+   </th>
+  </tr>
+ </thead>
+
+ <tbody>
+ {% for discuss in page.object_list %}
+  <tr>
+   <td>
+    <a href="{% url 'discuss-detail' discuss_id=discuss.id %}">
+     {{ discuss.name|default:"[no subject]"|truncatechars:100 }}
+    </a>
+   </td>
+   <td class="text-nowrap">{{ discuss.date|date:"Y-m-d" }}</td>
+   <td>{{ discuss.submitter|personify:project }}</td>
+  </tr>
+ {% empty %}
+  <tr>
+   <td colspan="8">No patches to display</td>
+  </tr>
+ {% endfor %}
+ </tbody>
+</table>
+
+{% if page.paginator.count %}
+{% include "patchwork/pagination.html" %}
+{% endif %}
+
+<div style="clear: both;"></div>
+{% endblock %}

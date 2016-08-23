@@ -29,6 +29,7 @@ from patchwork.views import cover as cover_views
 from patchwork.views import help as help_views
 from patchwork.views import mail as mail_views
 from patchwork.views import patch as patch_views
+from patchwork.views import discuss as discuss_views
 from patchwork.views import project as project_views
 from patchwork.views import pwclient as pwclient_views
 from patchwork.views import user as user_views
@@ -60,6 +61,10 @@ urlpatterns = [
     url(r'^cover/(?P<cover_id>\d+)/$', cover_views.cover,
         name='cover-detail'),
 
+    url(r'^project/(?P<project_id>[^/]+)/discuss/$', discuss_views.list,
+        name='discuss-list'),
+    url(r'^discuss/(?P<discuss_id>\d+)/$', discuss_views.discuss,
+        name='discuss-detail'),
 
     # logged-in user stuff
     url(r'^user/$', user_views.profile, name='user-profile'),

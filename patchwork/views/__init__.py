@@ -184,6 +184,48 @@ def set_bundle(request, project, action, data, patches, context):
 
     return []
 
+def submission_list(request, project, view,
+                 view_args={}, filter_settings=[], subms=None,
+                 editable_order=False):
+    context = {
+        'project': project,
+        'projects': Project.objects.all(),
+    }
+
+    # pagination
+
+    data = {}
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    order = Order(data.get('order'), editable=editable_order)
+
+    context.update({
+        'order': order,
+        'list_view': {
+            'view': view,
+            'view_params': view_args,
+            'params': {}
+        }})
+
+    if not editable_order:
+        subms = order.apply(subms)
+
+    # we don't need the content, diff or headers for a list; they're text
+    # fields that can potentially contain a lot of data
+    subms = subms.defer('content', 'headers')
+
+    paginator = Paginator(request, subms)
+
+    context.update({
+        'page': paginator.current_page,
+        'patchform': None,
+        'project': project,
+        'order': order,
+    })
+
+    return context
 
 def generic_list(request, project, view,
                  view_args={}, filter_settings=[], patches=None,

@@ -53,6 +53,12 @@
             Bundles
           </a>
         </li>
+        <li class="{% block discuss_active %}{% endblock %}">
+          <a href="{% url 'discuss-list' project_id=project.linkname %}">
+            <span class="glyphicon glyphicon-comment"></span>
+            Discuss
+          </a>
+        </li>
         <li class="{% block info_active %}{% endblock %}">
           <a href="{% url 'project-detail' project_id=project.linkname %}">
             <span class="glyphicon glyphicon-info-sign"></span>

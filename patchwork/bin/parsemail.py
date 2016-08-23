@@ -45,7 +45,7 @@ from django.db import IntegrityError
 
 from patchwork.models import (Patch, Project, Person, Comment, State,
                               DelegationRule, Submission, CoverLetter,
-                              get_default_initial_patch_state)
+                              DiscussThread, get_default_initial_patch_state)
 from patchwork.parser import parse_patch, patch_get_filenames
 
 LOGGER = logging.getLogger(__name__)
@@ -608,25 +608,48 @@ def parse_mail(mail, list_id=None):
 
     # we only save comments if we have the parent email
     submission = find_submission_for_comment(project, refs)
-    if not submission:
-        return
 
     if is_comment and diff:
         message += diff
 
     author.save()
 
-    comment = Comment(
-        submission=submission,
-        msgid=msgid,
-        date=date,
-        headers=headers,
-        submitter=author,
-        content=message)
-    comment.save()
-    LOGGER.debug('Comment saved')
+    if not submission:
+        if is_comment:
+            return
 
-    return comment
+        if x != None or n != None:
+            return
+
+        regex = re.compile('GIT|PATCH')
+        for prefix in prefixes:
+            if (regex.match(prefix)):
+                return
+
+        discuss_thread = DiscussThread(
+                msgid=msgid,
+                project=project,
+                name=name,
+                date=date,
+                headers=headers,
+                submitter=author,
+                content=message)
+        discuss_thread.save()
+        LOGGER.debug('Discuss Thread saved')
+
+        return discuss_thread
+    else:
+        comment = Comment(
+                submission=submission,
+                msgid=msgid,
+                date=date,
+                headers=headers,
+                submitter=author,
+                content=message)
+        comment.save()
+        LOGGER.debug('Comment saved')
+
+        return comment
 
 extra_error_message = '''
 == Mail

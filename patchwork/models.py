@@ -320,6 +320,8 @@ class Submission(EmailMixin, models.Model):
 class CoverLetter(Submission):
     pass
 
+class DiscussThread(Submission):
+    pass
 
 @python_2_unicode_compatible
 class Patch(Submission):

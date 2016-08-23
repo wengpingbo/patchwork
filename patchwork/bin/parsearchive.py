@@ -48,6 +48,7 @@ def parse_mbox(path, list_id):
         models.Patch: 0,
         models.CoverLetter: 0,
         models.Comment: 0,
+        models.DiscussThread: 0,
     }
     duplicates = 0
     dropped = 0
@@ -73,6 +74,7 @@ def parse_mbox(path, list_id):
               'covers': results[models.CoverLetter],
               'patches': results[models.Patch],
               'comments': results[models.Comment],
+              'comments': results[models.DiscussThread],
               'duplicates': duplicates,
               'dropped': dropped,
               'new': len(mbox) - duplicates - dropped,
