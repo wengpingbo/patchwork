@@ -1,0 +1,113 @@
+1. Install Django, recommend version 1.8
+
+sudo -H pip install django==1.8.13
+
+2. Install maildrop and fetchmail
+
+sudo apt-get install maildrop fetchmail
+
+3. create .fetchmailrc:
+
+```
+poll imap.gmail.com
+protocol imap
+timeout 300
+port 993
+username "xxxx@gmail.com" password "XXXXXXXX"
+keep
+ssl
+sslcertck
+sslproto TLS1
+mda "/opt/patchwork/mda.sh"
+```
+
+4. create /etc/maildroprc:
+
+```
+# Global maildrop filter file
+
+# Uncomment this line to make maildrop default to ~/Maildir for
+# delivery- this is where courier-imap (amongst others) will look.
+DEFAULT="/var/mail/lkml.mbox"
+```
+
+5. create /opt/patchwork/mda.sh
+
+```
+#!/bin/bash
+
+TEMPFILE=`mktemp -u`
+PARSEMAIL="/opt/patchwork/patchwork/bin/parsemail.sh"
+
+cat > $TEMPFILE
+cat $TEMPFILE | $PARSEMAIL --list-id="kernel.org"
+cat $TEMPFILE | /usr/bin/maildrop
+rm -f $TEMPFILE
+
+exit
+``` 
+
+6. install nginx and uwsgi
+
+sudo apt-get install nginx-full uwsgi uwsgi-plugin-python
+
+7. create uwsgi configure file /etc/uwsgi/app-available/patchwork.ini
+
+```
+[uwsgi]
+chdir = /opt/patchwork
+pythonpath = /opt/patchwork
+module = patchwork.wsgi:application
+
+master = true
+processes = 5
+# increase buffer size to avoid "502 bad gateway error"
+# "recv() failed (104: Connection reset by peer) while reading response header from upstream"
+buffer-size = 16384
+
+daemonize = /var/log/patchwork.log
+vacuum = true
+```
+
+8. create nginx configure file /etc/nginx/site-available/patchwork
+
+```
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name patchwork.example.com
+
+    location = favicon.ico { access_log off; log_not_found off; }
+
+    location /static {
+        alias /var/www/patchwork;
+        expires 3h;
+    }
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:/run/uwsgi/app/patchwork/socket;
+        uwsgi_modifier1 30;
+    }
+}
+```
+
+9. install patchwork
+
+sudo apt-get install -y postgresql postgresql-contrib
+sudo -u postgres createdb patchwork
+sudo -u postgres createuser www-data
+git clone https://github.com/getpatchwork/patchwork.git /opt/patchwork
+cd /opt/patchwork && sudo -H pip install -r ./requirements-prod.txt
+cp ./patchwork/settings/production.example.py ./patchwork/settings/production.py
+./manage.py check
+./manage.py migrate
+./manage.py loaddata ./patchwork/fixtures/default_{states, project, tags}.xml
+./manage.py collectstatic
+
+10. start uwsgi and nginx
+
+sudo systemctl start uwsgi
+sudo systemctl start nginx
+
